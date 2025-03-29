@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="box">
+        <div class="search">
+            <input type="text" placeholder="Enter your city">
+            <button><img src="search.png" alt="Search"></button>
+        </div>
+        <div class="weather">
+            <img src="clear.png" class="clear" alt="Weather Icon">
+            <h1 class="temp">28°C</h1>
+            <h2 class="city">Chikani</h2>
+            <div class="detail">
+                <div class="call">
+                    <img src="humidity.png" alt="Humidity Icon">
+                    <div>
+                        <p class="humidity">30%</p>
+                        <p>Humidity</p>
+                    </div>
+                </div>
+                <div class="call">
+                    <img src="wind.png" alt="Wind Speed Icon">
+                    <div>
+                        <p class="wind">4 km/h</p>
+                        <p>Wind Speed</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Outfit Suggestions Section -->
+            <div class="outfit">
+                <h3>Outfit Suggestions:</h3>
+                <p class="outfit-suggestion">Based on the weather, here's what we recommend:</p>
+                <div class="outfit-details"></div>
+            </div>
+
+            <!-- Forecast Section -->
+            <div class="forecast">
+                <h3>4-Day Forecast</h3>
+                <div class="forecast-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apikey = "cb4f94db38b0a526029a71784bec1962";
+        const apiurl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+        const forecastUrl = "https://api.openweathermap.org/data/2.5/forecast?units=metric&q=";
+        const searchbox = document.querySelector(".search input");
+        const searchBtn = document.querySelector(".search button");
+        const clear = document.querySelector(".clear");
+        const outfitDetails = document.querySelector(".outfit-details");
+        const forecastContainer = document.querySelector(".forecast-container");
+
+        async function checkweather(city) {
+            // Fetch current weather data
+            const response = await fetch(apiurl + city + `&appid=${apikey}`);
+            var data = await response.json();
+            console.log(data);
+
+            document.querySelector(".city").innerHTML = data.name;
+            document.querySelector(".temp").innerHTML = Math.round(data.main.temp) + "°C";
+            document.querySelector(".humidity").innerHTML = data.main.humidity + "%";
+            document.querySelector(".wind").innerHTML = data.wind.speed + " km/h";
+
+            // Change weather icon based on the weather type
+            if (data.weather[0].main == "Clear") {
+                clear.src = "clear.png";
+            } else if (data.weather[0].main == "Clouds") {
+                clear.src = "clouds.png";
+            } else if (data.weather[0].main == "Rain") {
+                clear.src = "rain.png";
+            } else if (data.weather[0].main == "Drizzle") {
+                clear.src = "drizzle.png";
+            } else if (data.weather[0].main == "Mist") {
+                clear.src = "mist.png";
+            } else if (data.weather[0].main == "Snow") {
+                clear.src = "snow.png";
+            }
+
+            // Outfit suggestions based on temperature
+            const temp = data.main.temp;
+            const suggestion = getOutfitSuggestion(temp);
+            outfitDetails.innerHTML = suggestion;
+
+            // Fetch 4-day forecast data
+            getForecast(city);
+        }
+
+        function getOutfitSuggestion(temp) {
+            if (temp >= 30) {
+                return `<p>It's hot outside! We recommend wearing shorts, a t-shirt, and sunglasses.</p>`;
+            } else if (temp >= 20 && temp < 30) {
+                return `<p>It's warm! A nice shirt or a light dress would be perfect.</p>`;
+            } else if (temp >= 10 && temp < 20) {
+                return `<p>It's a bit chilly! Consider wearing a light jacket and jeans.</p>`;
+            } else if (temp >= 0 && temp < 10) {
+                return `<p>It's cold! We recommend wearing a warm jacket, scarf, and gloves.</p>`;
+            } else {
+                return `<p>It's freezing! Make sure to bundle up with a heavy winter coat, gloves, and a hat.</p>`;
+            }
+        }
+
+        async function getForecast(city) {
+            const forecastResponse = await fetch(forecastUrl + city + `&appid=${apikey}`);
+            const forecastData = await forecastResponse.json();
+            console.log(forecastData);
+
+            // Clear any previous forecast
+            forecastContainer.innerHTML = "";
+
+            // Display the forecast for the next 4 days
+            const forecastList = forecastData.list.filter((data, index) => index % 8 === 0);  // Pick 12:00 PM data every day
+            
+            forecastList.slice(0, 4).forEach((dayData, index) => {
+                const date = new Date(dayData.dt * 1000);
+                const day = date.toLocaleString('en-us', { weekday: 'long' });
+                const temp = Math.round(dayData.main.temp);
+                const weatherIcon = `https://openweathermap.org/img/wn/${dayData.weather[0].icon}.png`;
+                const description = dayData.weather[0].description;
+
+                const forecastCard = `
+                    <div class="forecast-card">
+                        <h4>${day}</h4>
+                        <img src="${weatherIcon}" alt="Weather Icon">
+                        <p>${temp}°C</p>
+                        <p>${description}</p>
+                    </div>
+                `;
+                forecastContainer.innerHTML += forecastCard;
+            });
+        }
+
+        searchBtn.addEventListener("click", () => {
+            checkweather(searchbox.value);
+        });
+
+        // Optional: Allow pressing Enter to trigger search
+        searchbox.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                checkweather(searchbox.value);
+            }
+        });
+    </script>
+</body>
+</html>
